@@ -14,11 +14,11 @@ from twitter.oauth import OAuth
 from twitter.api import Twitter, TwitterError, TwitterHTTPError
 
 from twittercreds import (CONSUMER_KEY, CONSUMER_SECRET,
-                        ACCESS_KEY, ACCESS_SECRET, BOSS_USERNAME)
+                        ACCESS_KEY, ACCESS_SECRET)
 
 
 POST_INTERVAL = 120
-
+HISTORY_FILE_NAME = '.bothistory'
 
 class TwitterBot(object):
 
@@ -103,6 +103,30 @@ class TwitterBot(object):
 
         print('\n')
 
+def clean_history(filename=HISTORY_FILE_NAME):
+    try:
+        lines = open(filename, 'r').readlines()
+        lines = lines[:20]
+        with open(filename, 'w') as f:
+            f.writelines(lines)
+    except IOError as err:
+        print('ioerror! %s' % err)
+        f = open(filename, 'w')
+        f.close()
+
+def add_to_history(text, filename=HISTORY_FILE_NAME):
+    with open(filename, 'a') as f:
+        f.write(text + '\n')
+        f.flush()
+
+def history_contains(text, filename=HISTORY_FILE_NAME):
+    with open(filename) as f:
+        for line in f:
+            print('**  ', line)
+            if line.strip() == text.strip():
+                return True
+    return False
+
     # def send_dm(self, message):
     #     """sends me a DM if I'm running out of haiku"""
     #     try:
@@ -139,11 +163,26 @@ def description(raw_text):
     return soup.li.get_text()
 
 
+def test_history_stuff():
+    clean_history()
+
+    some_lines = imagefetching.routers_imgs()
+    for line in some_lines:
+        add_to_history(line)
+
+    for line in some_lines[:2]:
+        if not history_contains(line):
+            print('history is missing line %s' % line)
+
+
+
 def main():
-    pic_url = imagefetching.natgeo_pic_url()
-    if pic_url:
-        r = response_for_image(pic_url)
-        print(description(r.text))
+    test_history_stuff()
+
+    # pic_url = imagefetching.natgeo_pic_url()
+    # if pic_url:
+    #     r = response_for_image(pic_url)
+    #     print(description(r.text))
 
     # import argparse
     # parser = argparse.ArgumentParser()

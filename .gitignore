@@ -1,2 +1,3 @@
 *.pyc
 twittercreds.py
+.bothistory

@@ -17,7 +17,7 @@ from twittercreds import (CONSUMER_KEY, CONSUMER_SECRET,
                         ACCESS_KEY, ACCESS_SECRET)
 
 
-POST_INTERVAL = 120
+POST_INTERVAL = 10
 HISTORY_FILE_NAME = '.bothistory'
 
 class TwitterBot(object):
@@ -30,61 +30,76 @@ class TwitterBot(object):
         super(HaikuDemon, self).__init__()
         self._debug = debug
         self.post_interval = post_interval * 60
-        self.twitter = twitter = Twitter(
-            auth=OAuth(ACCESS_KEY,
-                       ACCESS_SECRET,
-                       CONSUMER_KEY,
-                       CONSUMER_SECRET),
-            api_version='1.1')
+        self.oauth = OAuth(ACCESS_KEY, ACCESS_SECRET,
+            CONSUMER_KEY, CONSUMER_SECRET)
+        self.twitter = Twitter(auth=self.oauth, api_version='1.1')
+        self.upload = Twitter(domain="upload.twitter.com", auth=self.oauth)
 
     def run(self):
         try:
             while True:
-                # self.entertain_the_huddled_masses()
+                self.entertain_the_huddled_masses()
                 self.sleep(self.post_interval)
 
         except KeyboardInterrupt:
             print('exiting')
             sys.exit(0)
 
-    # def entertain_the_huddled_masses(self):
-    #     haiku = haikuwriter.a_solitary_poem()
-    #     self.post(haiku)
+    def entertain_the_huddled_masses(self):
+        img_urls = imagefetching.reuters_imgs()
+        for img in img_urls:
+            if not history_contains(img):
+                add_to_history(img)
+                caption = description(response_for_image(img).text)
+                media_id = self.upload_media(img)
+                if media_id:
+                    self.twitter.statuses.update(status=caption,
+                        media_ids=str(media_id))
 
 
-    def post(self, post_text):
-        if self._debug:
-            print(post_text)
-            return True
+    def upload_media(self, img_url):
+        img_data = raw_data(img_url)
+        response = self.upload.media.upload(media=img_data)
+        return response.get('media_id')
 
-        try:
-            success = self.twitter.statuses.update(status=post_text)
-            print('posted haiku:\n\n%s' % post_text)
-            return success
-        except TwitterError as err:
-            http_code = err.e.code
+#   with open("example.png", "rb") as imagefile:
+#   params = {"media[]": imagefile.read(), "status": status}
+#   t.statuses.update_with_media(**params)
 
-            if http_code == 403:
-                # get the response from the error:
-                response = json.JSONDecoder().decode(err.response_data)
-                response = response.get('errors')
-                if response:
-                    response = response[0]
 
-                    error_code = int(response.get('code'))
-                    if error_code == 187:
-                        print('attempted to post duplicate')
-                        # status is a duplicate
-                        return True
-                    else:
-                        print('unknown error code: %d' % error_code)
+    # def post(self, post_text):
+    #     if self._debug:
+    #         print(post_text)
+    #         return True
 
-            else:
-                # if http_code is *not* 403:
-                print('received http response %d' % http_code)
-                # assume either a 404 or a 420, and sleep for 10 mins
-                time.sleep(600)
-                return False
+    #     try:
+    #         success = self.twitter.statuses.update(status=post_text)
+    #         print('posted haiku:\n\n%s' % post_text)
+    #         return success
+    #     except TwitterError as err:
+    #         http_code = err.e.code
+
+    #         if http_code == 403:
+    #             # get the response from the error:
+    #             response = json.JSONDecoder().decode(err.response_data)
+    #             response = response.get('errors')
+    #             if response:
+    #                 response = response[0]
+
+    #                 error_code = int(response.get('code'))
+    #                 if error_code == 187:
+    #                     print('attempted to post duplicate')
+    #                     # status is a duplicate
+    #                     return True
+    #                 else:
+    #                     print('unknown error code: %d' % error_code)
+
+    #         else:
+    #             # if http_code is *not* 403:
+    #             print('received http response %d' % http_code)
+    #             # assume either a 404 or a 420, and sleep for 10 mins
+    #             time.sleep(600)
+    #             return False
 
     def sleep(self, interval):
         interval = int(interval)
@@ -162,6 +177,9 @@ def description(raw_text):
     soup = bs4.BeautifulSoup(raw_text, 'html.parser') 
     return soup.li.get_text()
 
+def raw_data(image_url):
+    response = requests.get(image_url, stream=True)
+    return response.raw
 
 def test_history_stuff():
     clean_history()

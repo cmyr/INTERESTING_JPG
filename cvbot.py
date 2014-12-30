@@ -3,10 +3,10 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import bs4
-
-import imagefetching
+import requests
 import time
 import sys
+import shutil
 import random
 import json
 
@@ -16,9 +16,11 @@ from twitter.api import Twitter, TwitterError, TwitterHTTPError
 from twittercreds import (CONSUMER_KEY, CONSUMER_SECRET,
                         ACCESS_KEY, ACCESS_SECRET)
 
+import imagefetching
 
 POST_INTERVAL = 10
 HISTORY_FILE_NAME = '.bothistory'
+TEMP_IMAGE_FILE_NAME = 'tempimg'
 
 class TwitterBot(object):
 
@@ -27,15 +29,18 @@ class TwitterBot(object):
     """
 
     def __init__(self, post_interval=POST_INTERVAL, debug=False):
-        super(HaikuDemon, self).__init__()
+        super(TwitterBot, self).__init__()
         self._debug = debug
         self.post_interval = post_interval * 60
         self.oauth = OAuth(ACCESS_KEY, ACCESS_SECRET,
             CONSUMER_KEY, CONSUMER_SECRET)
         self.twitter = Twitter(auth=self.oauth, api_version='1.1')
-        self.upload = Twitter(domain="upload.twitter.com", auth=self.oauth)
+        self.upload = Twitter(domain="upload.twitter.com", auth=self.oauth,
+            api_version='1.1')
+        clean_history()
 
     def run(self):
+        print('CVBot running')
         try:
             while True:
                 self.entertain_the_huddled_masses()
@@ -50,56 +55,33 @@ class TwitterBot(object):
         for img in img_urls:
             if not history_contains(img):
                 add_to_history(img)
+                print('fetching img: %s' % img)
                 caption = description(response_for_image(img).text)
                 media_id = self.upload_media(img)
                 if media_id:
+                    print('posting caption: %s' % caption)
                     self.twitter.statuses.update(status=caption,
                         media_ids=str(media_id))
-
+                    return
+                else:
+                    print('failed to fetch media ID')
+                    return
+        print('found no new images')
 
     def upload_media(self, img_url):
-        img_data = raw_data(img_url)
-        response = self.upload.media.upload(media=img_data)
-        return response.get('media_id')
+        self.save_image(img_url)
+        with open(TEMP_IMAGE_FILE_NAME, 'rb') as f:
+            response = self.upload.media.upload(media=f.read())
+            media_id = response.get('media_id')
+            if media_id:
+                print('uploaded image with id %s' % media_id)
+                return media_id
 
-#   with open("example.png", "rb") as imagefile:
-#   params = {"media[]": imagefile.read(), "status": status}
-#   t.statuses.update_with_media(**params)
-
-
-    # def post(self, post_text):
-    #     if self._debug:
-    #         print(post_text)
-    #         return True
-
-    #     try:
-    #         success = self.twitter.statuses.update(status=post_text)
-    #         print('posted haiku:\n\n%s' % post_text)
-    #         return success
-    #     except TwitterError as err:
-    #         http_code = err.e.code
-
-    #         if http_code == 403:
-    #             # get the response from the error:
-    #             response = json.JSONDecoder().decode(err.response_data)
-    #             response = response.get('errors')
-    #             if response:
-    #                 response = response[0]
-
-    #                 error_code = int(response.get('code'))
-    #                 if error_code == 187:
-    #                     print('attempted to post duplicate')
-    #                     # status is a duplicate
-    #                     return True
-    #                 else:
-    #                     print('unknown error code: %d' % error_code)
-
-    #         else:
-    #             # if http_code is *not* 403:
-    #             print('received http response %d' % http_code)
-    #             # assume either a 404 or a 420, and sleep for 10 mins
-    #             time.sleep(600)
-    #             return False
+    def save_image(self, image_url):
+        response = requests.get(image_url, stream=True)
+        with open(TEMP_IMAGE_FILE_NAME, 'wb') as out_file:
+            response.raw.decode_content = True
+            shutil.copyfileobj(response.raw, out_file)
 
     def sleep(self, interval):
         interval = int(interval)
@@ -137,7 +119,7 @@ def add_to_history(text, filename=HISTORY_FILE_NAME):
 def history_contains(text, filename=HISTORY_FILE_NAME):
     with open(filename) as f:
         for line in f:
-            print('**  ', line)
+            print(line)
             if line.strip() == text.strip():
                 return True
     return False
@@ -177,14 +159,10 @@ def description(raw_text):
     soup = bs4.BeautifulSoup(raw_text, 'html.parser') 
     return soup.li.get_text()
 
-def raw_data(image_url):
-    response = requests.get(image_url, stream=True)
-    return response.raw
-
 def test_history_stuff():
     clean_history()
 
-    some_lines = imagefetching.routers_imgs()
+    some_lines = imagefetching.reuters_imgs()
     for line in some_lines:
         add_to_history(line)
 
@@ -193,14 +171,14 @@ def test_history_stuff():
             print('history is missing line %s' % line)
 
 
-
 def main():
-    test_history_stuff()
-
-    # pic_url = imagefetching.natgeo_pic_url()
-    # if pic_url:
-    #     r = response_for_image(pic_url)
-    #     print(description(r.text))
+    # testurl = "http://s2.reutersmedia.net/resources/r/?m=02&d=20141229&t=2&i=1008323401&w=620&fh=&fw=&ll=&pl=&r=2014-12-29T125516Z_2_GM1EACT0WFC01_RTRMADP_0_INDONESIA-AIRPLANE"
+    # testurl = "http://www.nationalgeographic.com/dc/exposure/homepage/photoconfiguration/image/45931_photo_bbeogq2ezjz6gatzmuj7agam73vu2hmpyjyavf6lo6pvvsfavj3q_850x478.jpg"
+    # save_image(testurl)
+    bot = TwitterBot()
+    # bot.upload_media(testurl)
+    bot.run()
+    # test_history_stuff()
 
     # import argparse
     # parser = argparse.ArgumentParser()

@@ -78,7 +78,9 @@ class TwitterBot(object):
                 add_to_history(img, self.history_name)
                 print('fetching img: %s \n caption %s' % (img, link))
                 caption = description(response_for_image(img).text)
-
+                if not caption:
+                    time.sleep(5 * 60)  # server might be down, retry in 5min
+                    continue
                 char_count = 140 - self.url_length
                 if char_count < len(caption):
                     caption = self.trim_caption(caption, char_count)
@@ -207,9 +209,14 @@ def response_for_image(image_url):
 
 
 def description(raw_text):
-    soup = bs4.BeautifulSoup(raw_text, 'html.parser')
-    return soup.li.get_text()
-
+    if raw_text:
+        soup = bs4.BeautifulSoup(raw_text, 'html.parser')
+        try:
+            return soup.li.get_text()
+        except AttributeError as err:
+            print(err)
+            print(soup.prettify())
+            return None
 
 def main():
     from twittercreds import normauth, nsfwauth

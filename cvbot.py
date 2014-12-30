@@ -19,9 +19,10 @@ from twittercreds import (CONSUMER_KEY, CONSUMER_SECRET,
 
 import imagefetching
 
-POST_INTERVAL = 10
+POST_INTERVAL = 120
 HISTORY_FILE_NAME = '.bothistory'
 TEMP_IMAGE_FILE_NAME = 'tempimg'
+HISTORY_LENGTH = 100
 
 
 class TwitterBot(object):
@@ -30,16 +31,18 @@ class TwitterBot(object):
     posts stuff to twitter, periodically.
     """
 
-    def __init__(self, post_interval=POST_INTERVAL, debug=False):
+    def __init__(self, name, image_func, post_interval=POST_INTERVAL, auth=None):
         super(TwitterBot, self).__init__()
-        self._debug = debug
         self.post_interval = post_interval * 60
-        self.oauth = OAuth(ACCESS_KEY, ACCESS_SECRET,
-                           CONSUMER_KEY, CONSUMER_SECRET)
+        self.name = name
+        self.history_name = HISTORY_FILE_NAME + '_' + name
+        self.oauth = auth or OAuth(ACCESS_KEY, ACCESS_SECRET,
+                                   CONSUMER_KEY, CONSUMER_SECRET)
         self.twitter = Twitter(auth=self.oauth, api_version='1.1')
         self.upload = Twitter(domain="upload.twitter.com", auth=self.oauth,
                               api_version='1.1')
-        clean_history()
+        self.image_func = image_func
+        clean_history(self.history_name)
         self.url_length = self.twitter_url_length()
         print('twitter short url length is %d' % self.url_length)
 
@@ -69,10 +72,10 @@ class TwitterBot(object):
             sys.exit(0)
 
     def entertain_the_huddled_masses(self):
-        img_urls = imagefetching.reuters_slideshow_imgs()
+        img_urls = self.image_func()
         for link, img in img_urls:
-            if not history_contains(img):
-                add_to_history(img)
+            if not history_contains(img, self.history_name):
+                add_to_history(img, self.history_name)
                 print('fetching img: %s \n caption %s' % (img, link))
                 caption = description(response_for_image(img).text)
 
@@ -144,7 +147,7 @@ class TwitterBot(object):
 def clean_history(filename=HISTORY_FILE_NAME):
     try:
         lines = open(filename, 'r').readlines()
-        lines = lines[:20]
+        lines = lines[:HISTORY_LENGTH]
         with open(filename, 'w') as f:
             f.writelines(lines)
     except IOError as err:
@@ -209,24 +212,40 @@ def description(raw_text):
 
 
 def main():
-    # testurl = "http://s2.reutersmedia.net/resources/r/?m=02&d=20141229&t=2&i=1008323401&w=620&fh=&fw=&ll=&pl=&r=2014-12-29T125516Z_2_GM1EACT0WFC01_RTRMADP_0_INDONESIA-AIRPLANE"
-    # testurl = "http://www.nationalgeographic.com/dc/exposure/homepage/photoconfiguration/image/45931_photo_bbeogq2ezjz6gatzmuj7agam73vu2hmpyjyavf6lo6pvvsfavj3q_850x478.jpg"
-    # long_caption = 'a person in a red and black striped sweatshirt standing at the top of steps , surrounded by similarly colorfully clothed people .'
-    # save_image(testurl)
-    bot = TwitterBot()
-    # for i in range(90, 125):
-    #     trimmed = bot.trim_caption(long_caption, i)
-    #     print(trimmed, len(trimmed))
-    # bot.upload_media(testurl)
+    from twittercreds import normauth, nsfwauth
+    
+    funcs = {
+        'reuters': imagefetching.reuters_slideshow_imgs,
+        'nsfw': imagefetching.reddit_nsfw_imgs
+    }
+
+    auths = {
+        'reuters': normauth,
+        'nsfw': nsfwauth
+    }
+
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('source', type=str, help="required argument")
+    parser.add_argument(
+        '-i', '--interval', type=int, help='post time interval')
+    args = parser.parse_args()
+
+    image_func = funcs.get(args.source)
+    if not image_func:
+        print('unknown source argument')
+        sys.exit(1)
+
+    kwargs = {
+        'name': args.source,
+        'image_func': image_func,
+        'auth': auths[args.source]
+    }
+
+    if args.interval:
+        kwargs['post_interval'] = args.interval
+    bot = TwitterBot(**kwargs)
     bot.run()
-    # test_history_stuff()
-
-    # import argparse
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('arg1', type=str, help="required argument")
-    # parser.add_argument('arg2', '--argument-2', help='optional boolean argument', action="store_true")
-    # args = parser.parse_args()
-
 
 if __name__ == "__main__":
     main()

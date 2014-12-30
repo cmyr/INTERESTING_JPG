@@ -15,13 +15,14 @@ from twitter.oauth import OAuth
 from twitter.api import Twitter, TwitterError, TwitterHTTPError
 
 from twittercreds import (CONSUMER_KEY, CONSUMER_SECRET,
-                        ACCESS_KEY, ACCESS_SECRET)
+                          ACCESS_KEY, ACCESS_SECRET)
 
 import imagefetching
 
 POST_INTERVAL = 10
 HISTORY_FILE_NAME = '.bothistory'
 TEMP_IMAGE_FILE_NAME = 'tempimg'
+
 
 class TwitterBot(object):
 
@@ -34,10 +35,10 @@ class TwitterBot(object):
         self._debug = debug
         self.post_interval = post_interval * 60
         self.oauth = OAuth(ACCESS_KEY, ACCESS_SECRET,
-            CONSUMER_KEY, CONSUMER_SECRET)
+                           CONSUMER_KEY, CONSUMER_SECRET)
         self.twitter = Twitter(auth=self.oauth, api_version='1.1')
         self.upload = Twitter(domain="upload.twitter.com", auth=self.oauth,
-            api_version='1.1')
+                              api_version='1.1')
         clean_history()
         self.url_length = self.twitter_url_length()
         print('twitter short url length is %d' % self.url_length)
@@ -47,7 +48,7 @@ class TwitterBot(object):
         look at me, being all 'best practices-y'
         (see https://dev.twitter.com/rest/reference/get/help/configuration)
         """
-        length = 23  #current value as a fallback
+        length = 23  # current value as a fallback
         try:
             config = self.twitter.help.configuration()
             l = config.get('short_url_length')
@@ -87,7 +88,7 @@ class TwitterBot(object):
                     print('posting caption: %s' % caption)
                     try:
                         self.twitter.statuses.update(status=caption,
-                            media_ids=str(media_id))
+                                                     media_ids=str(media_id))
                         return
                     except TwitterError as err:
                         print(err)
@@ -120,7 +121,7 @@ class TwitterBot(object):
             if len(trimmed) <= target_length:
                 return trimmed
 
-        return trimmed[:target_length-3] + '..'
+        return trimmed[:target_length - 3] + '..'
 
     def sleep(self, interval):
         interval = int(interval)
@@ -139,6 +140,7 @@ class TwitterBot(object):
 
         print('\n')
 
+
 def clean_history(filename=HISTORY_FILE_NAME):
     try:
         lines = open(filename, 'r').readlines()
@@ -150,10 +152,12 @@ def clean_history(filename=HISTORY_FILE_NAME):
         f = open(filename, 'w')
         f.close()
 
+
 def add_to_history(text, filename=HISTORY_FILE_NAME):
     with open(filename, 'a') as f:
         f.write(text + '\n')
         f.flush()
+
 
 def history_contains(text, filename=HISTORY_FILE_NAME):
     with open(filename) as f:
@@ -169,6 +173,7 @@ def history_contains(text, filename=HISTORY_FILE_NAME):
     #     except TwitterError as err:
     #         print(err)
 
+
 def format_seconds(seconds):
     """
     convert a number of seconds into a custom string representation
@@ -183,23 +188,25 @@ def format_seconds(seconds):
         time_string = "%id %s" % (d, time_string)
     return time_string
 
+
 def response_for_image(image_url):
     base_url = 'http://deeplearning.cs.toronto.edu/api/url.php'
     files = {
-    'urllink': ('', image_url),
-    'url-2txt': ('', '')
+        'urllink': ('', image_url),
+        'url-2txt': ('', '')
     }
     headers = {
-    'connection': 'keep-alive', 
-    'X-Requested-With': 'XMLHttpRequest',
-    'User-agent': "@interesting_jpg v. 1.0",
-    'From': 'http://www.twitter.com/interesting_jpg'}
+        'connection': 'keep-alive',
+        'X-Requested-With': 'XMLHttpRequest',
+        'User-agent': "@interesting_jpg v. 1.0",
+        'From': 'http://www.twitter.com/interesting_jpg'}
     return requests.post(base_url, files=files, headers=headers)
 
 
 def description(raw_text):
-    soup = bs4.BeautifulSoup(raw_text, 'html.parser') 
+    soup = bs4.BeautifulSoup(raw_text, 'html.parser')
     return soup.li.get_text()
+
 
 def main():
     # testurl = "http://s2.reutersmedia.net/resources/r/?m=02&d=20141229&t=2&i=1008323401&w=620&fh=&fw=&ll=&pl=&r=2014-12-29T125516Z_2_GM1EACT0WFC01_RTRMADP_0_INDONESIA-AIRPLANE"

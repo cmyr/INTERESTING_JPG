@@ -9,6 +9,7 @@ import sys
 import shutil
 import random
 import json
+import re
 
 from twitter.oauth import OAuth
 from twitter.api import Twitter, TwitterError, TwitterHTTPError
@@ -38,6 +39,21 @@ class TwitterBot(object):
         self.upload = Twitter(domain="upload.twitter.com", auth=self.oauth,
             api_version='1.1')
         clean_history()
+        self.url_length = self.twitter_url_length()
+
+    def twitter_url_length(self):
+        """
+        look at me, being all 'best practices-y'
+        (see https://dev.twitter.com/rest/reference/get/help/configuration)
+        """
+        length = 23  #current value as a fallback
+        try:
+            config = self.twitter.help.configuration()
+            l = config.get('short_url_length')
+            return l or length
+        except Exception as err:
+            print(err)
+        return length
 
     def run(self):
         print('CVBot running')
@@ -51,18 +67,30 @@ class TwitterBot(object):
             sys.exit(0)
 
     def entertain_the_huddled_masses(self):
-        img_urls = imagefetching.reuters_imgs()
-        for img in img_urls:
+        img_urls = imagefetching.reuters_slideshow_imgs()
+        for link, img in img_urls:
             if not history_contains(img):
                 add_to_history(img)
-                print('fetching img: %s' % img)
+                print('fetching img: %s \n caption %s' % (img, link))
                 caption = description(response_for_image(img).text)
+
+                char_count = 140 - self.url_length
+                if char_count < len(caption):
+                    caption = self.trim_caption(caption, char_count)
+                    # only append link if it will fit in the tweet
+                elif link and len(caption) + self.url_length + 1 < char_count:
+                    caption += '\n' + str(link)
+
                 media_id = self.upload_media(img)
                 if media_id:
                     print('posting caption: %s' % caption)
-                    self.twitter.statuses.update(status=caption,
-                        media_ids=str(media_id))
-                    return
+                    try:
+                        self.twitter.statuses.update(status=caption,
+                            media_ids=str(media_id))
+                        return
+                    except TwitterError as err:
+                        print(err)
+                        return
                 else:
                     print('failed to fetch media ID')
                     return
@@ -82,6 +110,16 @@ class TwitterBot(object):
         with open(TEMP_IMAGE_FILE_NAME, 'wb') as out_file:
             response.raw.decode_content = True
             shutil.copyfileobj(response.raw, out_file)
+
+    def trim_caption(self, caption, target_length):
+        from trimmings import trimmings
+        trimmed = caption
+        for string, sub in trimmings:
+            trimmed = re.sub(string, sub, trimmed)
+            if len(trimmed) <= target_length:
+                return trimmed
+
+        return trimmed[:target_length-3] + '...'
 
     def sleep(self, interval):
         interval = int(interval)
@@ -162,23 +200,15 @@ def description(raw_text):
     soup = bs4.BeautifulSoup(raw_text, 'html.parser') 
     return soup.li.get_text()
 
-def test_history_stuff():
-    clean_history()
-
-    some_lines = imagefetching.reuters_imgs()
-    for line in some_lines:
-        add_to_history(line)
-
-    for line in some_lines[:2]:
-        if not history_contains(line):
-            print('history is missing line %s' % line)
-
-
 def main():
     # testurl = "http://s2.reutersmedia.net/resources/r/?m=02&d=20141229&t=2&i=1008323401&w=620&fh=&fw=&ll=&pl=&r=2014-12-29T125516Z_2_GM1EACT0WFC01_RTRMADP_0_INDONESIA-AIRPLANE"
     # testurl = "http://www.nationalgeographic.com/dc/exposure/homepage/photoconfiguration/image/45931_photo_bbeogq2ezjz6gatzmuj7agam73vu2hmpyjyavf6lo6pvvsfavj3q_850x478.jpg"
+    # long_caption = 'a person in a red and black striped sweatshirt standing at the top of steps , surrounded by similarly colorfully clothed people .'
     # save_image(testurl)
     bot = TwitterBot()
+    # for i in range(90, 125):
+    #     trimmed = bot.trim_caption(long_caption, i)
+    #     print(trimmed, len(trimmed))
     # bot.upload_media(testurl)
     bot.run()
     # test_history_stuff()

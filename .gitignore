@@ -1,4 +1,6 @@
+.DS_Store
 *.pyc
 twittercreds.py
-.bothistory
+.bothistory*
+tempimg
 reuterssample*

@@ -10,7 +10,8 @@ from collections import namedtuple
 from reuterssample import reuters_sample
 
 
-LinkedPhoto = namedtuple('LinkedPhoto', ['link_url', 'img_url'  ])
+LinkedPhoto = namedtuple('LinkedPhoto', ['link_url', 'img_url'])
+
 
 def natgeo_pic_url():
     source_url = 'http://photography.nationalgeographic.com/photography/photo-of-the-day/'
@@ -21,38 +22,6 @@ def natgeo_pic_url():
             if tag['property'] == 'og:image':
                 return tag['content']
 
-def reuters_imgs():
-    reuters = "http://www.reuters.com/news/pictures"
-    r = requests.get(reuters)
-    soup = bs4.BeautifulSoup(r.text)
-    images = [i for i in soup.find_all('img') 
-    if i.has_attr('alt') and i['alt'] == "Photo"]
-   
-    img_urls = [urllib.unquote(img['src']).decode('utf8') for img in images]
-    return [re.sub(r'w=300', r'w=620', i) for i in img_urls]
-
-def reuters_linked_images():
-    reuters_base_url = "http://www.reuters.com"
-    reuters_photos_url = "http://www.reuters.com/news/pictures"
-    r = requests.get(reuters_photos_url)
-    soup = bs4.BeautifulSoup(r.text)
-
-    found_photos = list()
-    photo_divs = soup.find_all('div', class_='photo')
-    for div in photo_divs:
-        link = div.find('a')
-        img = div.find('img', alt='Photo')
-        # we get a bunch of small versions, but we can resize them sneakily
-        if img:
-            img = re.sub(r'w=300', r'w=620', img.get('src'))    
-        
-        if link and img:
-            found_photos.append(
-                LinkedPhoto(reuters_base_url + link['href'], 
-                    urllib.unquote(img).decode('utf8')
-                    )
-                )
-    return found_photos
 
 def reuters_slideshow_link():
     reuters_base_url = "http://www.reuters.com"
@@ -61,6 +30,7 @@ def reuters_slideshow_link():
     soup = bs4.BeautifulSoup(r.text)
     div = soup.find('div', class_='photo')
     return reuters_base_url + div.find('a')['href']
+
 
 def reuters_slideshow_imgs():
     link = reuters_slideshow_link()

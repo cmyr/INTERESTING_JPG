@@ -77,7 +77,7 @@ class TwitterBot(object):
             if not history_contains(img, self.history_name):
                 add_to_history(img, self.history_name)
                 print('fetching img: %s \n caption %s' % (img, link))
-                caption = description(response_for_image(img).text)
+                caption = self.response_for_image(img)
                 if not caption:
                     time.sleep(5 * 60)  # server might be down, retry in 5min
                     continue
@@ -127,6 +127,24 @@ class TwitterBot(object):
                 return trimmed
 
         return trimmed[:target_length - 3] + '..'
+
+    def response_for_image(self, image_url):
+        base_url = 'http://deeplearning.cs.toronto.edu/api/url.php'
+        files = {
+            'urllink': ('', image_url),
+            'url-2txt': ('', '')
+        }
+        headers = {
+            'connection': 'keep-alive',
+            'X-Requested-With': 'XMLHttpRequest',
+            'User-agent': "@interesting_jpg %s v. 1.0" % self.name,
+            'From': 'http://www.twitter.com/interesting_jpg'}
+        r = requests.post(base_url, files=files, headers=headers)
+        text = r.text.strip()
+        if not len(text):
+            print('no text in response. status: %d %s' % (r.status_code, r.reason))
+            return None
+        return description(text)
 
     def sleep(self, interval):
         interval = int(interval)
@@ -192,20 +210,6 @@ def format_seconds(seconds):
     if d:
         time_string = "%id %s" % (d, time_string)
     return time_string
-
-
-def response_for_image(image_url):
-    base_url = 'http://deeplearning.cs.toronto.edu/api/url.php'
-    files = {
-        'urllink': ('', image_url),
-        'url-2txt': ('', '')
-    }
-    headers = {
-        'connection': 'keep-alive',
-        'X-Requested-With': 'XMLHttpRequest',
-        'User-agent': "@interesting_jpg v. 1.0",
-        'From': 'http://www.twitter.com/interesting_jpg'}
-    return requests.post(base_url, files=files, headers=headers)
 
 
 def description(raw_text):

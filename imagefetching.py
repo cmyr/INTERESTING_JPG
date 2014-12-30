@@ -7,7 +7,6 @@ import bs4
 import urllib
 import re
 from collections import namedtuple
-from reuterssample import reuters_sample
 
 
 LinkedPhoto = namedtuple('LinkedPhoto', ['link_url', 'img_url'])

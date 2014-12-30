@@ -48,10 +48,20 @@ def reuters_slideshow_imgs():
             pass
     return imgs
 
+def reddit_nsfw_imgs():
+    url = "http://www.reddit.com/over18?dest=http%3A%2F%2Fwww.reddit.com%2Fr%2FAmateur%2Bblowjobs%2Bcreampies%2Bcumsluts%2Bdirtysmall%2Bfacesitting%2BGirlsFinishingTheJob%2Bnsfwhardcore"
+    headers = {'User-agent': '@interesting_jpg v0.9'}
+    params = {'uh': '', 'over18': 'yes'}
+    r = requests.post(url, params=params, headers=headers)
+    soup = bs4.BeautifulSoup(r.text)
+    things = soup.find_all('div', class_="thing")
+    pixxx = [t.find('a', class_='thumbnail')['href'] for t in things]
+    pixxx = [t for t in pixxx if t and re.search('\.(jpg|jpeg|png)', t, flags=re.IGNORECASE)]
+    return [LinkedPhoto(None, t) for t in pixxx]
 
 def main():
-    imgs = reuters_slideshow_imgs()
-    print(imgs)
+    for img in reddit_nsfw_imgs():
+        print(img)
 
 if __name__ == "__main__":
     main()

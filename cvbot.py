@@ -40,6 +40,7 @@ class TwitterBot(object):
             api_version='1.1')
         clean_history()
         self.url_length = self.twitter_url_length()
+        print('twitter short url length is %d' % self.url_length)
 
     def twitter_url_length(self):
         """
@@ -119,7 +120,7 @@ class TwitterBot(object):
             if len(trimmed) <= target_length:
                 return trimmed
 
-        return trimmed[:target_length-3] + '...'
+        return trimmed[:target_length-3] + '..'
 
     def sleep(self, interval):
         interval = int(interval)

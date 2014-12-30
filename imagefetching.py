@@ -37,7 +37,6 @@ def reuters_slideshow_imgs():
     r = requests.get(link)
     soup = bs4.BeautifulSoup(r.text)
     slides = soup.find_all('div', class_="slide")
-    print(slides)
     imgs = list()
     for slide in slides:
         try:
@@ -46,7 +45,7 @@ def reuters_slideshow_imgs():
             img_link = re.sub(r'&w=[0-9]+', r'&w=620', img_link)
             imgs.append(LinkedPhoto(None, img_link))
         except (KeyError, AttributeError, TypeError):
-            print('error extracting image from slide: %s' % slide.prettify())
+            pass
     return imgs
 
 

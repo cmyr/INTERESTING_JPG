@@ -119,7 +119,6 @@ def add_to_history(text, filename=HISTORY_FILE_NAME):
 def history_contains(text, filename=HISTORY_FILE_NAME):
     with open(filename) as f:
         for line in f:
-            print(line)
             if line.strip() == text.strip():
                 return True
     return False
@@ -151,7 +150,11 @@ def response_for_image(image_url):
     'urllink': ('', image_url),
     'url-2txt': ('', '')
     }
-    headers = {'connection': 'keep-alive', 'X-Requested-With': 'XMLHttpRequest'}
+    headers = {
+    'connection': 'keep-alive', 
+    'X-Requested-With': 'XMLHttpRequest',
+    'User-agent': "@interesting_jpg v. 1.0",
+    'From': 'http://www.twitter.com/interesting_jpg'}
     return requests.post(base_url, files=files, headers=headers)
 
 

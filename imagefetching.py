@@ -54,7 +54,8 @@ def reddit_nsfw_imgs():
     r = requests.post(url, params=params, headers=headers)
     soup = bs4.BeautifulSoup(r.text)
     things = soup.find_all('div', class_="thing")
-    pixxx = [t.find('a', class_='thumbnail')['href'] for t in things]
+    pixxx = [t.find('a', class_='thumbnail') for t in things]
+    pixxx = [t['href'] for t in pixxx if t]
     pixxx = [t for t in pixxx if t and re.search('\.(jpg|jpeg|png)', t, flags=re.IGNORECASE)]
     return [LinkedPhoto(None, t) for t in pixxx]
 

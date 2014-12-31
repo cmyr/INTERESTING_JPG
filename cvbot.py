@@ -77,7 +77,8 @@ class TwitterBot(object):
         if not img_urls:
             print('failed to fetch img urls')
             return
-        for link, img in random.shuffle(img_urls):
+        random.shuffle(img_urls)
+        for link, img in img_urls:
             if not history_contains(img, self.history_name):
                 add_to_history(img, self.history_name)
                 print('fetching img: %s \n caption %s' % (img, link))

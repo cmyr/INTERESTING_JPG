@@ -48,7 +48,7 @@ def reuters_slideshow_imgs():
     return imgs
 
 def reddit_nsfw_imgs():
-    url = "http://www.reddit.com/over18?dest=http%3A%2F%2Fwww.reddit.com%2Fr%2Fblowjobs%2Bcreampies%2Bcumsluts%2Bdirtysmall%2Bfacesitting%2BGirlsFinishingTheJob%2Bnsfwhardcore%2Bbroslikeus%2BCuteGuyButts%2Bforeskin%2BGaybrosGoneWild%2Bgaycumsluts%2Bgaynsfw%2Bgayporn%2BGaySex%2BMassiveCock%2Bpenis
+    url = "http://www.reddit.com/over18?dest=http%3A%2F%2Fwww.reddit.com%2Fr%2Fblowjobs%2Bcreampies%2Bcumsluts%2Bdirtysmall%2Bfacesitting%2BGirlsFinishingTheJob%2Bnsfwhardcore%2Bbroslikeus%2BCuteGuyButts%2Bforeskin%2BGaybrosGoneWild%2Bgaycumsluts%2Bgaynsfw%2Bgayporn%2BGaySex%2BMassiveCock%2Bpenis"
     headers = {'User-agent': '@interesting_jpg v0.9'}
     params = {'uh': '', 'over18': 'yes'}
     r = requests.post(url, params=params, headers=headers)

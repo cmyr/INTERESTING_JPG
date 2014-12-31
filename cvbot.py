@@ -74,6 +74,9 @@ class TwitterBot(object):
 
     def entertain_the_huddled_masses(self):
         img_urls = self.image_func()
+        if not img_urls:
+            print('failed to fetch img urls')
+            return
         for link, img in random.shuffle(img_urls):
             if not history_contains(img, self.history_name):
                 add_to_history(img, self.history_name)

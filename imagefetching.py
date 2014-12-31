@@ -43,7 +43,8 @@ def reuters_slideshow_imgs():
             img_link = urllib.unquote(img_link).decode('utf8')
             img_link = re.sub(r'&w=[0-9]+', r'&w=620', img_link)
             imgs.append(LinkedPhoto(None, img_link))
-        except (KeyError, AttributeError, TypeError):
+        except (KeyError, AttributeError, TypeError) as err:
+            print('error processing slide', err)
             pass
     return imgs
 

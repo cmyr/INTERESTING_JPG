@@ -10,6 +10,7 @@ import shutil
 import random
 import json
 import re
+import random
 
 from twitter.oauth import OAuth
 from twitter.api import Twitter, TwitterError, TwitterHTTPError
@@ -73,7 +74,7 @@ class TwitterBot(object):
 
     def entertain_the_huddled_masses(self):
         img_urls = self.image_func()
-        for link, img in img_urls:
+        for link, img in random.shuffle(img_urls):
             if not history_contains(img, self.history_name):
                 add_to_history(img, self.history_name)
                 print('fetching img: %s \n caption %s' % (img, link))

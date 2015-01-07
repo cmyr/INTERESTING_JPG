@@ -6,8 +6,9 @@ import requests
 import bs4
 import re
 
+DEBUG = True
 
-def response_for_image(image_url):
+def response_for_image(image_url, client_name):
     base_url = 'http://deeplearning.cs.toronto.edu/api/url.php'
     files = {
         'urllink': ('', image_url),
@@ -16,9 +17,9 @@ def response_for_image(image_url):
     headers = {
         'connection': 'keep-alive',
         'X-Requested-With': 'XMLHttpRequest',
-        'User-agent': "@interesting_jpg %s v. 1.0" % self.name
-        # 'user-agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/600.2.5 (KHTML, like Gecko) Version/8.0.2 Safari/600.2.5"
+        'User-agent': "@interesting_jpg %s v. 1.0" % client_name
     }
+
     r = requests.post(base_url, files=files, headers=headers)
     text = r.text.strip()
     if not len(text):
@@ -41,12 +42,17 @@ def nearest_neighbour(raw_text):
 def captions(raw_text):
     soup = bs4.BeautifulSoup(raw_text)
     header = soup.find('h4', text=re.compile(r'Top'))
+    if DEBUG:
+        print(header.find_next_sibling().prettify())
     captions = header.find_next_sibling().find_all('li')
     return [c.text for c in captions]
 
 
 def top_caption(raw_text):
-    return captions(raw_text)[0]
+    all_captions = captions(raw_text)
+    if DEBUG:
+        print(all_captions)
+    return all_captions[0]
 
 
 def main():

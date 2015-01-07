@@ -3,11 +3,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import requests
+import random
 import bs4
 import urllib
 import re
 from collections import namedtuple
-
 
 LinkedPhoto = namedtuple('LinkedPhoto', ['link_url', 'img_url'])
 
@@ -47,21 +47,36 @@ def reuters_slideshow_imgs():
             pass
     return imgs
 
+def random_nsfw_subreddit():
+    with open('nsfw_subreddits.txt') as subreddits:
+        return random.choice(subreddits.read().splitlines())
+
 def reddit_nsfw_imgs():
-    url = "http://www.reddit.com/over18?dest=http%3A%2F%2Fwww.reddit.com%2Fr%2Fblowjobs%2Bcreampies%2Bcumsluts%2Bdirtysmall%2Bfacesitting%2BGirlsFinishingTheJob%2Bnsfwhardcore%2BCuteGuyButts%2BGaybrosGoneWild%2Bgaycumsluts%2Bgaynsfw%2Bgayporn%2BGaySex%2Bpenis"
-    headers = {'User-agent': '@interesting_jpg v0.9'}
-    params = {'uh': '', 'over18': 'yes'}
-    r = requests.post(url, params=params, headers=headers)
-    soup = bs4.BeautifulSoup(r.text)
-    things = soup.find_all('div', class_="thing")
-    pixxx = [t.find('a', class_='thumbnail') for t in things]
-    pixxx = [t['href'] for t in pixxx if t]
-    pixxx = [t for t in pixxx if t and re.search('\.(jpg|jpeg|png)', t, flags=re.IGNORECASE)]
-    return [LinkedPhoto(None, t) for t in pixxx]
+    while 1:
+        base_url = "http://www.reddit.com/over18?dest=http%3A%2F%2Fwww.reddit.com%2Fr%2F"
+        subreddit = random_nsfw_subreddit()
+        url = base_url + subreddit
+        headers = {'User-agent': '@interesting_jpg v0.9'}
+        params = {'uh': '', 'over18': 'yes'}
+        r = requests.post(url, params=params, headers=headers)
+        soup = bs4.BeautifulSoup(r.text)
+        things = soup.find_all('div', class_="thing")
+        pixxx = [t.find('a', class_='thumbnail') for t in things]
+        pixxx = [t['href'] for t in pixxx if t]
+        pixxx = [t for t in pixxx if t and re.search('\.(jpg|jpeg|png)', t, flags=re.IGNORECASE)]
+        if len(pixxx):
+            print('found image in /r/%s' % subreddit)
+            return [LinkedPhoto(None, t) for t in pixxx]
+        else:
+            print('no images found in /r/%s' % subreddit)
+
 
 def main():
-    for img in reddit_nsfw_imgs():
-        print(img)
+    for i in range(10):
+        imgs = [b for a, b in reddit_nsfw_imgs()]
+        print(random.choice(imgs))
+    # for img in reddit_nsfw_imgs():
+    #     print(img)
 
 if __name__ == "__main__":
     main()

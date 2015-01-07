@@ -2,7 +2,6 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import bs4
 import requests
 import time
 import sys
@@ -19,10 +18,11 @@ from twittercreds import (CONSUMER_KEY, CONSUMER_SECRET,
                           ACCESS_KEY, ACCESS_SECRET)
 
 import imagefetching
+import cvserver
 
 POST_INTERVAL = 120
 HISTORY_FILE_NAME = '.bothistory'
-TEMP_IMAGE_FILE_NAME = 'tempimg'
+TEMP_IMAGE_FILE_NAME = '.tempimg'
 HISTORY_LENGTH = 100
 
 
@@ -82,10 +82,11 @@ class TwitterBot(object):
             if not history_contains(img, self.history_name):
                 add_to_history(img, self.history_name)
                 print('fetching img: %s \n caption %s' % (img, link))
-                caption = self.response_for_image(img)
-                if not caption:
-                    time.sleep(5 * 60)  # server might be down, retry in 5min
+                response = cvserver.response_for_image(img, self.name)
+                if not response:
+                    time.sleep(10 * 60)  # server might be down, retry in 5min
                     continue
+                caption = cvserver.top_caption(response)
                 char_count = 140 - self.url_length
                 if char_count < len(caption):
                     caption = self.trim_caption(caption, char_count)
@@ -133,24 +134,6 @@ class TwitterBot(object):
 
         return trimmed[:target_length - 3] + '..'
 
-    def response_for_image(self, image_url):
-        base_url = 'http://deeplearning.cs.toronto.edu/api/url.php'
-        files = {
-            'urllink': ('', image_url),
-            'url-2txt': ('', '')
-        }
-        headers = {
-            'connection': 'keep-alive',
-            'X-Requested-With': 'XMLHttpRequest',
-            'User-agent': "@interesting_jpg %s v. 1.0" % self.name,
-            'From': 'http://www.twitter.com/interesting_jpg'}
-        r = requests.post(base_url, files=files, headers=headers)
-        text = r.text.strip()
-        if not len(text):
-            print('no text in response. status: %d %s' % (r.status_code, r.reason))
-            return None
-        return description(text)
-
     def sleep(self, interval):
         interval = int(interval)
         randfactor = random.randrange(0, interval)
@@ -194,13 +177,6 @@ def history_contains(text, filename=HISTORY_FILE_NAME):
                 return True
     return False
 
-    # def send_dm(self, message):
-    #     """sends me a DM if I'm running out of haiku"""
-    #     try:
-    #         self.twitter.direct_messages.new(user=BOSS_USERNAME, text=message)
-    #     except TwitterError as err:
-    #         print(err)
-
 
 def format_seconds(seconds):
     """
@@ -216,16 +192,6 @@ def format_seconds(seconds):
         time_string = "%id %s" % (d, time_string)
     return time_string
 
-
-def description(raw_text):
-    if raw_text:
-        soup = bs4.BeautifulSoup(raw_text, 'html.parser')
-        try:
-            return soup.li.get_text()
-        except AttributeError as err:
-            print(err)
-            print(soup.prettify())
-            return None
 
 def main():
     from twittercreds import normauth, nsfwauth
@@ -263,5 +229,10 @@ def main():
     bot = TwitterBot(**kwargs)
     bot.run()
 
+def test():
+    pass
+
+
 if __name__ == "__main__":
     main()
+    # test()

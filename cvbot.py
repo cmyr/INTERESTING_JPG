@@ -19,6 +19,7 @@ from twittercreds import (CONSUMER_KEY, CONSUMER_SECRET,
 
 import imagefetching
 import cvserver
+import imagehash
 
 POST_INTERVAL = 120
 HISTORY_FILE_NAME = '.bothistory'
@@ -164,16 +165,21 @@ def clean_history(filename=HISTORY_FILE_NAME):
         f.close()
 
 
-def add_to_history(text, filename=HISTORY_FILE_NAME):
+def add_to_history(img_url, filename=HISTORY_FILE_NAME):
+    image_hash = imagehash.image_hash(img_url)
     with open(filename, 'a') as f:
-        f.write(text + '\n')
+        f.write(image_hash + '\n')
         f.flush()
 
 
-def history_contains(text, filename=HISTORY_FILE_NAME):
+def history_contains(img_url, filename=HISTORY_FILE_NAME):
     with open(filename) as f:
         for line in f:
-            if line.strip() == text.strip():
+            # legacy, while transitioning to better hashing thing
+            if line.strip() == img_url.strip():
+                return True
+            other_hash = imagehash.hex_to_hash(line.strip())
+            if image_hash - other_hash <= 3: # arbitrary measure of closeness
                 return True
     return False
 
@@ -192,6 +198,24 @@ def format_seconds(seconds):
         time_string = "%id %s" % (d, time_string)
     return time_string
 
+
+def _test_image_hashes():
+    results = dict()
+    for i in range(100):
+        nsfw_urls = imagefetching.reddit_nsfw_imgs()
+        for caption, url in nsfw_urls:
+            img_hash = imagehash.image_hash(url)
+            collision = _contains_close_match(img_hash, results)
+            if collision:
+                print ("collision:", url, collision, sep="\n")
+            else:
+                results[str(img_hash)] = url
+
+def _contains_close_match(img_hash, results_dict):
+    for other_hash, other_url in results_dict.items():
+        distance = imagehash.hash_distance(img_hash, other_hash)
+        if distance <= 3:
+            return other_url
 
 def main():
     from twittercreds import normauth, nsfwauth

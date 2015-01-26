@@ -145,6 +145,11 @@ def image_hash(img_url):
     os.remove(TEMP_IMAGE_FILE_NAME)
     return image_hash
 
+def hash_distance(img_hash, img_hash_hex):
+	img_hash = hex_to_hash(str(img_hash))
+	other_hash = hex_to_hash(img_hash_hex)
+	return other_hash - img_hash
+
 
 def main():
     import imagefetching

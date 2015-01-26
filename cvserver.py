@@ -6,7 +6,7 @@ import requests
 import bs4
 import re
 
-DEBUG = True
+DEBUG = False
 
 def response_for_image(image_url, client_name):
     base_url = 'http://deeplearning.cs.toronto.edu/api/url.php'

@@ -178,9 +178,12 @@ def history_contains(img_url, filename=HISTORY_FILE_NAME):
             # legacy, while transitioning to better hashing thing
             if line.strip() == img_url.strip():
                 return True
-            other_hash = imagehash.hex_to_hash(line.strip())
-            if image_hash - other_hash <= 3: # arbitrary measure of closeness
-                return True
+            try:
+                other_hash = imagehash.hex_to_hash(line.strip())
+                if image_hash - other_hash <= 3: # arbitrary measure of closeness
+                    return True
+            except ValueError as err:
+                print("value error with history hash %s" % other_hash)
     return False
 
 

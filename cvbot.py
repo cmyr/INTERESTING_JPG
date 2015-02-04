@@ -183,7 +183,7 @@ def history_contains(img_url, filename=HISTORY_FILE_NAME):
                 if image_hash - other_hash <= 3: # arbitrary measure of closeness
                     return True
             except ValueError as err:
-                print("value error with history hash %s" % other_hash)
+                print("value error with history hash %s" % line.strip())
     return False
 
 

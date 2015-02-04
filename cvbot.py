@@ -168,7 +168,7 @@ def clean_history(filename=HISTORY_FILE_NAME):
 def add_to_history(img_url, filename=HISTORY_FILE_NAME):
     image_hash = imagehash.image_hash(img_url)
     with open(filename, 'a') as f:
-        f.write(image_hash + '\n')
+        f.write(str(image_hash) + '\n')
         f.flush()
 
 

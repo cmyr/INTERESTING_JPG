@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import shutil
 import imagehash
+from requests.exceptions import ConnectionError
 
 def convert_hash_format(filepath):
     shutil.copy(filepath, "%s.bak" % filepath)
@@ -17,9 +18,12 @@ def convert_hash_format(filepath):
             except ValueError as err:
                 pass
 
-            new_hash = imagehash.image_hash(line.strip())
-            if new_hash:
-                f.write(str(new_hash)+"\n")
+            try:
+                new_hash = imagehash.image_hash(line.strip())
+                if new_hash:
+                    f.write(str(new_hash)+"\n")
+            except ConnectionError as err:
+                pass
 
 def main():
     import argparse

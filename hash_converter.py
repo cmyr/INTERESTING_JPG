@@ -10,9 +10,16 @@ def convert_hash_format(filepath):
     to_convert = open(filepath).read().splitlines()
     with open(filepath, 'w') as f:
         for line in to_convert:
-                new_hash = imagehash.image_hash(line.strip())
-                if new_hash:
-                    f.write(str(new_hash)+"\n")
+            try:
+                new_hash = imagehash.hex_to_hash(line)
+                f.write(str(new_hash)+"\n")
+                continue
+            except ValueError as err:
+                pass
+
+            new_hash = imagehash.image_hash(line.strip())
+            if new_hash:
+                f.write(str(new_hash)+"\n")
 
 def main():
     import argparse

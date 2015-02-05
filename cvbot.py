@@ -180,6 +180,7 @@ def history_contains(img_url, filename=HISTORY_FILE_NAME):
                 return True
             try:
                 other_hash = imagehash.hex_to_hash(line.strip())
+                image_hash = imagehash.image_hash(img_url)
                 if image_hash - other_hash <= 3: # arbitrary measure of closeness
                     return True
             except ValueError as err:

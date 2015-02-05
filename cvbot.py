@@ -74,41 +74,50 @@ class TwitterBot(object):
             sys.exit(0)
 
     def entertain_the_huddled_masses(self):
+        linked_photo = self.get_next_image()
+        if linked_photo != None:
+            response = cvserver.response_for_image(
+                linked_photo.img_url, self.name)
+            if not response:
+                print("no response from server")
+                return
+            caption = self.format_caption(cvserver.top_caption(response))
+            media_id = self.upload_media(img)
+            if media_id:
+                print('using image at %s' % linked_photo.img_url)
+                print('posting with caption: %s' % caption)
+                try:
+                    self.twitter.statuses.update(status=caption,
+                                                 media_ids=str(media_id))
+                    return
+                except TwitterError as err:
+                    print(err)
+                    return
+            else:
+                print('failed to fetch media ID')
+                return
+
+    def get_next_image(self):
         img_urls = self.image_func()
         if not img_urls:
             print('failed to fetch img urls')
             return
         random.shuffle(img_urls)
-        for link, img in img_urls:
-            if not history_contains(img, self.history_name):
-                add_to_history(img, self.history_name)
-                response = cvserver.response_for_image(img, self.name)
-                if not response:
-                    time.sleep(10 * 60)  # server might be down, retry in 5min
-                    continue
-                caption = cvserver.top_caption(response)
-                char_count = 140 - self.url_length
-                if char_count < len(caption):
-                    caption = self.trim_caption(caption, char_count)
-                    # only append link if it will fit in the tweet
-                elif link and len(caption) + self.url_length + 1 < char_count:
-                    caption += '\n' + str(link)
-
-                media_id = self.upload_media(img)
-                if media_id:
-                    print('using image at %s' % img)
-                    print('posting with caption: %s' % caption)
-                    try:
-                        self.twitter.statuses.update(status=caption,
-                                                     media_ids=str(media_id))
-                        return
-                    except TwitterError as err:
-                        print(err)
-                        return
-                else:
-                    print('failed to fetch media ID')
-                    return
+        for linked_photo in img_urls:
+            image_hash = imagehash.image_hash(linked_photo.img_url)
+            if not history_contains(image_hash, self.history_name):
+                add_to_history(image_hash, self.history_name)
+                return linked_photo
         print('found no new images')
+
+    def format_caption(self, caption, link):
+        char_count = 140 - self.url_length
+        if char_count < len(caption):
+            caption = self.trim_caption(caption, char_count)
+            # only append link if it will fit in the tweet
+        elif link and len(caption) + self.url_length + 1 < char_count:
+            caption += '\n' + str(link)
+        return caption
 
     def upload_media(self, img_url):
         self.save_image(img_url)
@@ -151,6 +160,12 @@ class TwitterBot(object):
 
         print('\n')
 
+    def test_hashing(self):
+        for i in range(100):
+            linked_photo = self.get_next_image()
+            sys.stdout.write("\rprocessed: %d" % i)
+            sys.stdout.flush()
+
 
 def clean_history(filename=HISTORY_FILE_NAME):
     try:
@@ -164,25 +179,20 @@ def clean_history(filename=HISTORY_FILE_NAME):
         f.close()
 
 
-def add_to_history(img_url, filename=HISTORY_FILE_NAME):
-    image_hash = imagehash.image_hash(img_url)
+def add_to_history(img_hash, filename=HISTORY_FILE_NAME):
     with open(filename, 'a') as f:
-        f.write(str(image_hash) + '\n')
+        f.write(str(img_hash) + '\n')
         f.flush()
 
 
-def history_contains(img_url, filename=HISTORY_FILE_NAME):
+def history_contains(image_hash, filename=HISTORY_FILE_NAME):
     with open(filename) as f:
         for line in f:
-            # legacy, while transitioning to better hashing thing
-            if line.strip() == img_url.strip():
-                return True
             try:
                 other_hash = imagehash.hex_to_hash(line.strip())
-                image_hash = imagehash.image_hash(img_url)
-                # there's a bug in imagehash that I should really put up a PR for
-                image_hash = imagehash.hex_to_hash(str(imagehash))
-                if image_hash - other_hash <= 3: # arbitrary measure of closeness
+                # arbitrary measure of closeness
+                if image_hash - other_hash <= 3:
+                    print("collision: %s / %s" % (image_hash, other_hash))
                     return True
             except ValueError as err:
                 print("value error with history hash %s" % line.strip())
@@ -212,9 +222,10 @@ def _test_image_hashes():
             img_hash = imagehash.image_hash(url)
             collision = _contains_close_match(img_hash, results)
             if collision:
-                print ("collision:", url, collision, sep="\n")
+                print("collision:", url, collision, sep="\n")
             else:
                 results[str(img_hash)] = url
+
 
 def _contains_close_match(img_hash, results_dict):
     for other_hash, other_url in results_dict.items():
@@ -222,9 +233,10 @@ def _contains_close_match(img_hash, results_dict):
         if distance <= 3:
             return other_url
 
+
 def main():
     from twittercreds import normauth, nsfwauth
-    
+
     funcs = {
         'reuters': imagefetching.reuters_slideshow_imgs,
         'nsfw': imagefetching.reddit_nsfw_imgs
@@ -240,12 +252,20 @@ def main():
     parser.add_argument('source', type=str, help="required argument")
     parser.add_argument(
         '-i', '--interval', type=int, help='post time interval')
+    parser.add_argument(
+        '--test', help="test image hashing", action="store_true")
     args = parser.parse_args()
 
     image_func = funcs.get(args.source)
     if not image_func:
         print('unknown source argument')
         sys.exit(1)
+
+    if args.test:
+        bot = TwitterBot(name='nsfw', image_func=funcs.get('nsfw'))
+        bot.test_hashing()
+        return
+
 
     kwargs = {
         'name': args.source,
@@ -257,6 +277,7 @@ def main():
         kwargs['post_interval'] = args.interval
     bot = TwitterBot(**kwargs)
     bot.run()
+
 
 def test():
     pass

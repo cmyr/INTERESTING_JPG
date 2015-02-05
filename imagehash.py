@@ -43,62 +43,64 @@ import os
 
 
 def binary_array_to_hex(arr):
-	h = 0
-	s = []
-	for i,v in enumerate(arr.flatten()):
-		if v: h += 2**(i % 8)
-		if (i % 8) == 7:
-			s.append(hex(h)[2:].rjust(2, '0'))
-			h = 0
-	return "".join(s)
+    h = 0
+    s = []
+    for i,v in enumerate(arr.flatten()):
+        if v: h += 2**(i % 8)
+        if (i % 8) == 7:
+            s.append(hex(h)[2:].rjust(2, '0'))
+            h = 0
+    return "".join(s)
 
 def binary_array_to_int(arr):
-	return sum([2**(i % 8) for i,v in enumerate(arr.flatten()) if v])
+    return sum([2**(i % 8) for i,v in enumerate(arr.flatten()) if v])
 
 """
 Hash encapsulation. Can be used for dictionary keys and comparisons.
 """
 class ImageHash(object):
-	def __init__(self, binary_array):
-		self.hash = binary_array
+    def __init__(self, binary_array):
+        self.hash = binary_array
 
-	def __str__(self):
-		return binary_array_to_hex(self.hash)
+    def __str__(self):
+        return binary_array_to_hex(self.hash)
 
-	def __repr__(self):
-		return repr(self.hash)
+    def __repr__(self):
+        return repr(self.hash)
 
-	def __sub__(self, other):
-		if other is None:
-			raise TypeError('Other hash must not be None.')
-		if self.hash.shape != other.hash.shape:
-			raise TypeError('ImageHashes must be of the same shape.', self.hash.shape, other.hash.shape)
-		return (self.hash != other.hash).sum()
+    def __sub__(self, other):
+        if other is None:
+            raise TypeError('Other hash must not be None.')
+        if self.hash.shape != other.hash.shape:
+            raise TypeError('ImageHashes must be of the same shape.', self.hash.shape, other.hash.shape)
+        return (self.hash != other.hash).sum()
 
-	def __eq__(self, other):
-		if other is None:
-			return False
-		return numpy.array_equal(self.hash, other.hash)
+    def __eq__(self, other):
+        if other is None:
+            return False
+        return numpy.array_equal(self.hash, other.hash)
 
-	def __ne__(self, other):
-		if other is None:
-			return False
-		return not numpy.array_equal(self.hash, other.hash)
+    def __ne__(self, other):
+        if other is None:
+            return False
+        return not numpy.array_equal(self.hash, other.hash)
 
-	def __hash__(self):
-		return binary_array_to_int(self.hash)
+    def __hash__(self):
+        return binary_array_to_int(self.hash)
 
 def hex_to_hash(hexstr):
-	l = []
-	if len(hexstr) != 16:
-		raise ValueError('The hex string has the wrong length')
-	for i in range(8):
-		#for h in hexstr[::2]:
-		h = hexstr[i*2:i*2+2]
-		v = int("0x" + h, 16)
-		for i in range(8):
-			l.append(v & 2**i > 0)
-	return ImageHash(numpy.array(l))
+    l = []
+    if len(hexstr) != 16:
+        raise ValueError('The hex string has the wrong length')
+    for i in range(8):
+        #for h in hexstr[::2]:
+        h = hexstr[i*2:i*2+2]
+        v = int("0x" + h, 16)
+        for i in range(8):
+            l.append(v & 2**i > 0)
+    array = numpy.array(l)
+    array.shape = (8, 8)
+    return ImageHash(array)
 
 
 """
@@ -109,12 +111,12 @@ Implementation follows http://www.hackerfactor.com/blog/index.php?/archives/432-
 @image must be a PIL instance.
 """
 def average_hash(image, hash_size=8):
-	image = image.convert("L").resize((hash_size, hash_size), Image.ANTIALIAS)
-	pixels = numpy.array(image.getdata()).reshape((hash_size, hash_size))
-	avg = pixels.mean()
-	diff = pixels > avg
-	# make a hash
-	return ImageHash(diff)
+    image = image.convert("L").resize((hash_size, hash_size), Image.ANTIALIAS)
+    pixels = numpy.array(image.getdata()).reshape((hash_size, hash_size))
+    avg = pixels.mean()
+    diff = pixels > avg
+    # make a hash
+    return ImageHash(diff)
 
 
 """
@@ -125,11 +127,11 @@ following http://www.hackerfactor.com/blog/index.php?/archives/529-Kind-of-Like-
 @image must be a PIL instance.
 """
 def dhash(image, hash_size=8):
-	image = image.convert("L").resize((hash_size + 1, hash_size), Image.ANTIALIAS)
-	pixels = numpy.array(image.getdata(), dtype=numpy.float).reshape((hash_size + 1, hash_size))
-	# compute differences
-	diff = pixels[1:,:] > pixels[:-1,:]
-	return ImageHash(diff)
+    image = image.convert("L").resize((hash_size + 1, hash_size), Image.ANTIALIAS)
+    pixels = numpy.array(image.getdata(), dtype=numpy.float).reshape((hash_size + 1, hash_size))
+    # compute differences
+    diff = pixels[1:,:] > pixels[:-1,:]
+    return ImageHash(diff)
 
 
 TEMP_IMAGE_FILE_NAME = "tmpimage2"
@@ -146,9 +148,9 @@ def image_hash(img_url):
     return image_hash
 
 def hash_distance(img_hash, img_hash_hex):
-	img_hash = hex_to_hash(str(img_hash))
-	other_hash = hex_to_hash(img_hash_hex)
-	return other_hash - img_hash
+    img_hash = hex_to_hash(str(img_hash))
+    other_hash = hex_to_hash(img_hash_hex)
+    return other_hash - img_hash
 
 
 def main():
@@ -156,12 +158,12 @@ def main():
     img_urls = imagefetching.reuters_slideshow_imgs()
     last_hash = None
     for caption, link in img_urls:
-    	img_hash = image_hash(link)
-    	if last_hash == None:
-    		last_hash = img_hash
+        img_hash = image_hash(link)
+        if last_hash == None:
+            last_hash = img_hash
         print(img_hash)
-    	print("diff ", img_hash - last_hash)
+        print("diff ", img_hash - last_hash)
         last_hash = img_hash
 
 if __name__ == "__main__":
-	main()
+    main()

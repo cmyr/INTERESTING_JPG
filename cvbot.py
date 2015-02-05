@@ -181,7 +181,7 @@ def history_contains(img_url, filename=HISTORY_FILE_NAME):
                 other_hash = imagehash.hex_to_hash(line.strip())
                 image_hash = imagehash.image_hash(img_url)
                 # there's a bug in imagehash that I should really put up a PR for
-                image_hash = imagehash.hext_to_hash(str(imagehash))
+                image_hash = imagehash.hex_to_hash(str(imagehash))
                 if image_hash - other_hash <= 3: # arbitrary measure of closeness
                     return True
             except ValueError as err:

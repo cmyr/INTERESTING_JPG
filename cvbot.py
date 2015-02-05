@@ -168,6 +168,14 @@ class TwitterBot(object):
 
         print('\n')
 
+    def delete_last(self):
+        account_info = self.twitter.account.verify_credentials()
+        user_name = account_info.get('screen_name')
+        tweets = self.twitter.statuses.user_timeline(screen_name=user_name)
+        last = tweets[0]
+        self.twitter.statuses.destroy(id=last.get('id_str'))
+        print("deleted %s" % last.get('text'))
+
     def test_hashing(self):
         for i in range(100):
             linked_photo = self.get_next_image()
@@ -262,6 +270,9 @@ def main():
         '-i', '--interval', type=int, help='post time interval')
     parser.add_argument(
         '--test', help="test image hashing", action="store_true")
+    parser.add_argument(
+        '--delete', help="delete last posted tweet", action="store_true")
+    
     args = parser.parse_args()
 
     image_func = funcs.get(args.source)
@@ -284,6 +295,10 @@ def main():
     if args.interval:
         kwargs['post_interval'] = args.interval
     bot = TwitterBot(**kwargs)
+
+    if args.delete:
+        return bot.delete_last()
+
     bot.run()
 
 

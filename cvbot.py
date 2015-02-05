@@ -82,7 +82,6 @@ class TwitterBot(object):
         for link, img in img_urls:
             if not history_contains(img, self.history_name):
                 add_to_history(img, self.history_name)
-                print('fetching img: %s \n caption %s' % (img, link))
                 response = cvserver.response_for_image(img, self.name)
                 if not response:
                     time.sleep(10 * 60)  # server might be down, retry in 5min
@@ -97,7 +96,8 @@ class TwitterBot(object):
 
                 media_id = self.upload_media(img)
                 if media_id:
-                    print('posting caption: %s' % caption)
+                    print('using image at %s' % img)
+                    print('posting with caption: %s' % caption)
                     try:
                         self.twitter.statuses.update(status=caption,
                                                      media_ids=str(media_id))
@@ -116,7 +116,6 @@ class TwitterBot(object):
             response = self.upload.media.upload(media=f.read())
             media_id = response.get('media_id')
             if media_id:
-                print('uploaded image with id %s' % media_id)
                 return media_id
 
     def save_image(self, image_url):

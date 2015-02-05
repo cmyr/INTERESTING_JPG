@@ -81,7 +81,8 @@ class TwitterBot(object):
             if not response:
                 print("no response from server")
                 return
-            caption = self.format_caption(cvserver.top_caption(response))
+            caption = self.format_caption(
+                cvserver.top_caption(response), linked_photo.link_url)
             media_id = self.upload_media(img)
             if media_id:
                 print('using image at %s' % linked_photo.img_url)
@@ -265,7 +266,6 @@ def main():
         bot = TwitterBot(name='nsfw', image_func=funcs.get('nsfw'))
         bot.test_hashing()
         return
-
 
     kwargs = {
         'name': args.source,

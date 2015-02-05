@@ -24,6 +24,9 @@ def convert_hash_format(filepath):
                     f.write(str(new_hash)+"\n")
             except ConnectionError as err:
                 pass
+            except Exception as err:
+                print(err)
+                pass
 
 def main():
     import argparse

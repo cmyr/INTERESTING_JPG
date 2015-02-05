@@ -48,6 +48,13 @@ class TwitterBot(object):
         self.url_length = self.twitter_url_length()
         print('twitter short url length is %d' % self.url_length)
 
+    def set_proc_title(self):
+        try:
+            import setproctitle
+            setproctitle.setproctitle('CVBot_%s' % self.name)
+        except ImportError:
+            print("missing module: setproctitle")
+
     def twitter_url_length(self):
         """
         look at me, being all 'best practices-y'
@@ -261,6 +268,7 @@ def main():
     if not image_func:
         print('unknown source argument')
         sys.exit(1)
+
 
     if args.test:
         bot = TwitterBot(name='nsfw', image_func=funcs.get('nsfw'))

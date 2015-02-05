@@ -83,7 +83,7 @@ class TwitterBot(object):
                 return
             caption = self.format_caption(
                 cvserver.top_caption(response), linked_photo.link_url)
-            media_id = self.upload_media(img)
+            media_id = self.upload_media(linked_photo.img_url)
             if media_id:
                 print('using image at %s' % linked_photo.img_url)
                 print('posting with caption: %s' % caption)

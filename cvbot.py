@@ -7,10 +7,11 @@ import time
 import sys
 import shutil
 import random
-import json
 import re
 import random
+import os
 
+import cPickle as pickle
 from twitter.oauth import OAuth
 from twitter.api import Twitter, TwitterError, TwitterHTTPError
 
@@ -26,6 +27,9 @@ HISTORY_FILE_NAME = '.bothistory'
 TEMP_IMAGE_FILE_NAME = '.tempimg'
 HISTORY_LENGTH = 100
 
+NO_POSTING = False
+DEBUG = False
+
 
 class TwitterBot(object):
 
@@ -33,20 +37,26 @@ class TwitterBot(object):
     posts stuff to twitter, periodically.
     """
 
-    def __init__(self, name, image_func, post_interval=POST_INTERVAL, auth=None):
+    def __init__(
+        self, name, image_func, post_interval=POST_INTERVAL, auth=None):
         super(TwitterBot, self).__init__()
         self.post_interval = post_interval * 60
         self.name = name
         self.history_name = HISTORY_FILE_NAME + '_' + name
         self.oauth = auth or OAuth(ACCESS_KEY, ACCESS_SECRET,
                                    CONSUMER_KEY, CONSUMER_SECRET)
-        self.twitter = Twitter(auth=self.oauth, api_version='1.1')
+        self.twitter = None
         self.upload = Twitter(domain="upload.twitter.com", auth=self.oauth,
                               api_version='1.1')
         self.image_func = image_func
-        clean_history(self.history_name)
-        self.url_length = self.twitter_url_length()
-        print('twitter short url length is %d' % self.url_length)
+        self.history = self.load_history()
+        if not NO_POSTING:
+            self.url_length = self.twitter_url_length()
+
+    def twitter_connection(self):
+        if self.twitter == None:
+            self.twitter = Twitter(auth=self.oauth, api_version='1.1')
+        return self.twitter
 
     def set_proc_title(self):
         try:
@@ -62,7 +72,7 @@ class TwitterBot(object):
         """
         length = 23  # current value as a fallback
         try:
-            config = self.twitter.help.configuration()
+            config = self.twitter_connection().help.configuration()
             l = config.get('short_url_length')
             return l or length
         except Exception as err:
@@ -105,13 +115,15 @@ class TwitterBot(object):
         print('found no new images')
 
     def get_caption(self, linked_photo):
+        if NO_POSTING:
+            return "fake caption"
         response = cvserver.response_for_image(
-                linked_photo.img_url, self.name)
-            if not response:
-                print("no response from server")
-                return None
-            caption = self.format_caption(
-                cvserver.top_caption(response), linked_photo.link_url)
+            linked_photo.img_url, self.name)
+        if not response:
+            print("no response from server")
+            return None
+        caption = self.format_caption(
+            cvserver.top_caption(response), linked_photo.link_url)
 
     def format_caption(self, caption, link):
         char_count = 140 - self.url_length
@@ -123,13 +135,16 @@ class TwitterBot(object):
         return caption
 
     def tweet(self, img_url, text):
+        if NO_POSTING:
+            print("fake posted tweet for url: %s" % img_url)
+            return
         media_id = self.upload_media(img_url)
         if media_id:
             print('using image at %s' % img_url)
             print('posting with caption: %s' % text)
             try:
-                self.twitter.statuses.update(status=textpad,
-                                             media_ids=str(media_id))
+                self.twitter_connection().statuses.update(status=textpad,
+                                                          media_ids=str(media_id))
                 return
             except TwitterError as err:
                 print(err)
@@ -289,8 +304,14 @@ def main():
         '--test', help="test image hashing", action="store_true")
     parser.add_argument(
         '--delete', help="delete last posted tweet", action="store_true")
-    
+    parser.add_argument(
+        '-v', '--verbose', help="print debug information", action="store_true")
+
     args = parser.parse_args()
+
+    if args.verbose:
+        global DEBUG
+        DEBUG = True
 
     image_func = funcs.get(args.source)
     if not image_func:
@@ -311,11 +332,6 @@ def main():
         return bot.delete_last()
 
     bot.run()
-
-
-def test():
-    pass
-
 
 if __name__ == "__main__":
     main()

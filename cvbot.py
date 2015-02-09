@@ -143,7 +143,7 @@ class TwitterBot(object):
                 print('using image at %s' % img_url)
                 print('posting with caption: %s' % text)
             try:
-                self.twitter_connection().statuses.update(status=textpad,
+                self.twitter_connection().statuses.update(status=text,
                                                           media_ids=str(media_id))
                 return
             except TwitterError as err:

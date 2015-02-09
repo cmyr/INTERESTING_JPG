@@ -83,27 +83,10 @@ class TwitterBot(object):
     def entertain_the_huddled_masses(self):
         linked_photo = self.get_next_image()
         if linked_photo != None:
-            response = cvserver.response_for_image(
-                linked_photo.img_url, self.name)
-            if not response:
-                print("no response from server")
+            caption = self.get_caption(linked_photo)
+            if not caption:
                 return
-            caption = self.format_caption(
-                cvserver.top_caption(response), linked_photo.link_url)
-            media_id = self.upload_media(linked_photo.img_url)
-            if media_id:
-                print('using image at %s' % linked_photo.img_url)
-                print('posting with caption: %s' % caption)
-                try:
-                    self.twitter.statuses.update(status=caption,
-                                                 media_ids=str(media_id))
-                    return
-                except TwitterError as err:
-                    print(err)
-                    return
-            else:
-                print('failed to fetch media ID')
-                return
+            self.tweet(linked_photo.img_url, caption)
 
     def get_next_image(self):
         img_urls = self.image_func()
@@ -118,6 +101,15 @@ class TwitterBot(object):
                 return linked_photo
         print('found no new images')
 
+    def get_caption(self, linked_photo):
+        response = cvserver.response_for_image(
+                linked_photo.img_url, self.name)
+            if not response:
+                print("no response from server")
+                return None
+            caption = self.format_caption(
+                cvserver.top_caption(response), linked_photo.link_url)
+
     def format_caption(self, caption, link):
         char_count = 140 - self.url_length
         if char_count < len(caption):
@@ -126,6 +118,22 @@ class TwitterBot(object):
         elif link and len(caption) + self.url_length + 1 < char_count:
             caption += '\n' + str(link)
         return caption
+
+    def tweet(self, img_url, text):
+        media_id = self.upload_media(img_url)
+        if media_id:
+            print('using image at %s' % img_url)
+            print('posting with caption: %s' % text)
+            try:
+                self.twitter.statuses.update(status=textpad,
+                                             media_ids=str(media_id))
+                return
+            except TwitterError as err:
+                print(err)
+                return
+        else:
+            print('failed to fetch media ID')
+            return
 
     def upload_media(self, img_url):
         self.save_image(img_url)

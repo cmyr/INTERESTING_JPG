@@ -78,6 +78,9 @@ class TwitterBot(object):
 
         except KeyboardInterrupt:
             print('exiting')
+
+        finally:
+            self.save_history()
             sys.exit(0)
 
     def entertain_the_huddled_masses(self):
@@ -96,8 +99,8 @@ class TwitterBot(object):
         random.shuffle(img_urls)
         for linked_photo in img_urls:
             image_hash = imagehash.image_hash(linked_photo.img_url)
-            if not history_contains(image_hash, self.history_name):
-                add_to_history(image_hash, self.history_name)
+            if not self.history_contains(linked_photo.img_url, image_hash):
+                self.add_to_history(linked_photo.img_url, image_hash)
                 return linked_photo
         print('found no new images')
 
@@ -177,12 +180,56 @@ class TwitterBot(object):
         print('\n')
 
     def delete_last(self):
-        account_info = self.twitter.account.verify_credentials()
+        account_info = self.twitter_connection().account.verify_credentials()
         user_name = account_info.get('screen_name')
-        tweets = self.twitter.statuses.user_timeline(screen_name=user_name)
+        tweets = self.twitter_connection().statuses.user_timeline(
+            screen_name=user_name)
         last = tweets[0]
-        self.twitter.statuses.destroy(id=last.get('id_str'))
+        self.twitter_connection().statuses.destroy(id=last.get('id_str'))
         print("deleted %s" % last.get('text'))
+
+    def load_history(self):
+        history = dict()
+        pickle_file = "%s.p" % self.history_name
+        if not os.path.exists(pickle_file):
+            # migrate old hashes if present
+            if os.path.exists(self.history_name):
+                with open(self.history_name) as oldFile:
+                    old_hashes = oldFile.read().splitlines()
+                    for oh in old_hashes:
+                        history[oh] = 'None'
+        else:
+            history = pickle.load(open(pickle_file))
+        if DEBUG:
+            print("loaded %d items to history." % len(history))
+        return history
+
+    def history_contains(self, img_url, img_hash):
+        for hhash, hurl in self.history.items():
+            h_diff = imagehash.hex_to_hash(hhash) - img_hash
+            if h_diff <= 6:  # arbitrary magic measure of closeness
+                if DEBUG:
+                    print('hash collision (diff %d):\n%s\n%s' %
+                          (h_diff, img_url, hurl))
+                return True
+            if h_diff <= 16:
+                print("low diff: %d" % h_diff)
+            if hurl == img_url:
+                if DEBUG:
+                    print('url collision: \n%s' % img_url)
+                return True
+        return False
+
+    def add_to_history(self, img_url, img_hash):
+        if DEBUG:
+            print("%s added to history" % img_url)
+        self.history[str(img_hash)] = img_url
+
+    def save_history(self):
+        pickle_file = "%s.p" % self.history_name
+        pickle.dump(self.history, open(pickle_file, 'wb'))
+        if DEBUG:
+            print("saved %d items to history" % len(self.history))
 
     def test_hashing(self):
         for i in range(100):
@@ -190,37 +237,6 @@ class TwitterBot(object):
             sys.stdout.write("\rprocessed: %d" % i)
             sys.stdout.flush()
 
-
-def clean_history(filename=HISTORY_FILE_NAME):
-    try:
-        lines = open(filename, 'r').readlines()
-        lines = lines[:HISTORY_LENGTH]
-        with open(filename, 'w') as f:
-            f.writelines(lines)
-    except IOError as err:
-        print('ioerror! %s' % err)
-        f = open(filename, 'w')
-        f.close()
-
-
-def add_to_history(img_hash, filename=HISTORY_FILE_NAME):
-    with open(filename, 'a') as f:
-        f.write(str(img_hash) + '\n')
-        f.flush()
-
-
-def history_contains(image_hash, filename=HISTORY_FILE_NAME):
-    with open(filename) as f:
-        for line in f:
-            try:
-                other_hash = imagehash.hex_to_hash(line.strip())
-                # arbitrary measure of closeness
-                if image_hash - other_hash <= 3:
-                    print("collision: %s / %s" % (image_hash, other_hash))
-                    return True
-            except ValueError as err:
-                print("value error with history hash %s" % line.strip())
-    return False
 
 
 def format_seconds(seconds):
@@ -238,24 +254,17 @@ def format_seconds(seconds):
     return time_string
 
 
-def _test_image_hashes():
-    results = dict()
-    for i in range(100):
-        nsfw_urls = imagefetching.reddit_nsfw_imgs()
-        for caption, url in nsfw_urls:
-            img_hash = imagehash.image_hash(url)
-            collision = _contains_close_match(img_hash, results)
-            if collision:
-                print("collision:", url, collision, sep="\n")
-            else:
-                results[str(img_hash)] = url
 
 
-def _contains_close_match(img_hash, results_dict):
-    for other_hash, other_url in results_dict.items():
-        distance = imagehash.hash_distance(img_hash, other_hash)
-        if distance <= 3:
-            return other_url
+def test():
+    global NO_POSTING, DEBUG
+    NO_POSTING = True
+    DEBUG = True
+
+    from twittercreds import normauth
+    bot = TwitterBot(
+        name='nsfw', image_func=imagefetching.reddit_nsfw_imgs, post_interval=0.1)
+    bot.run()
 
 
 def main():
@@ -287,12 +296,6 @@ def main():
     if not image_func:
         print('unknown source argument')
         sys.exit(1)
-
-
-    if args.test:
-        bot = TwitterBot(name='nsfw', image_func=funcs.get('nsfw'))
-        bot.test_hashing()
-        return
 
     kwargs = {
         'name': args.source,

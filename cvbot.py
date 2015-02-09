@@ -122,7 +122,7 @@ class TwitterBot(object):
         if not response:
             print("no response from server")
             return None
-        caption = self.format_caption(
+        return self.format_caption(
             cvserver.top_caption(response), linked_photo.link_url)
 
     def format_caption(self, caption, link):
@@ -140,8 +140,9 @@ class TwitterBot(object):
             return
         media_id = self.upload_media(img_url)
         if media_id:
-            print('using image at %s' % img_url)
-            print('posting with caption: %s' % text)
+            if DEBUG:
+                print('using image at %s' % img_url)
+                print('posting with caption: %s' % text)
             try:
                 self.twitter_connection().statuses.update(status=textpad,
                                                           media_ids=str(media_id))

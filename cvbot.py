@@ -84,12 +84,11 @@ class TwitterBot(object):
         try:
             while True:
                 self.entertain_the_huddled_masses()
+                self.save_history()
                 self.sleep(self.post_interval)
 
         except KeyboardInterrupt:
             print('exiting')
-
-        finally:
             self.save_history()
             sys.exit(0)
 
@@ -307,6 +306,8 @@ def main():
         '--delete', help="delete last posted tweet", action="store_true")
     parser.add_argument(
         '-v', '--verbose', help="print debug information", action="store_true")
+    parser.add_argument(
+        '-d', '--delay', help="set initial sleep interval", type=int)
 
     args = parser.parse_args()
 
@@ -331,6 +332,9 @@ def main():
 
     if args.delete:
         return bot.delete_last()
+
+    if args.delay:
+        bot.sleep(args.delay)
 
     bot.run()
 

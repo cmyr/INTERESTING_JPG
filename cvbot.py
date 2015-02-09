@@ -177,11 +177,12 @@ class TwitterBot(object):
 
         return trimmed[:target_length - 3] + '..'
 
-    def sleep(self, interval):
+    def sleep(self, interval, randomize=True):
         interval = int(interval)
-        randfactor = random.randrange(0, interval)
-        interval = interval * 0.5 + randfactor
-        sleep_chunk = 10  # seconds
+        if randomize:
+            randfactor = random.randrange(0, interval)
+            interval = interval * 0.5 + randfactor
+        sleep_chunk = 1  # seconds
 
         print('sleeping for %d minutes' % (interval / 60))
 
@@ -334,7 +335,7 @@ def main():
         return bot.delete_last()
 
     if args.delay:
-        bot.sleep(args.delay * 60)
+        bot.sleep(args.delay * 60, randomize=False)
 
     bot.run()
 

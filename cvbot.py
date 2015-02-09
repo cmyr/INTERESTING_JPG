@@ -334,7 +334,7 @@ def main():
         return bot.delete_last()
 
     if args.delay:
-        bot.sleep(args.delay)
+        bot.sleep(args.delay * 60)
 
     bot.run()
 

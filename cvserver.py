@@ -42,6 +42,10 @@ def nearest_neighbour(raw_text):
 def captions(raw_text):
     soup = bs4.BeautifulSoup(raw_text)
     header = soup.find('h4', text=re.compile(r'Top'))
+    if not header:
+        print('error parsing text')
+        print(soup.prettify())
+        return
     if DEBUG:
         print(header.find_next_sibling().prettify())
     captions = header.find_next_sibling().find_all('li')

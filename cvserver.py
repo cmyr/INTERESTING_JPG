@@ -53,9 +53,8 @@ def captions(raw_text):
         captions = next_sib.findall('li')
         if captions:
             return [c.text for c in captions]
-    else:
-        print("no captions found?")
-        print(soup.prettify())
+    print("no captions found?")
+    print(soup.prettify())
 
 
 def top_caption(raw_text):

@@ -49,7 +49,8 @@ def captions(raw_text):
     if DEBUG:
         print(header.find_next_sibling().prettify())
     next_sib = header.find_next_sibling()
-    if next_sib:
+    if next_sib not None:
+        print(next_sib)
         captions = next_sib.findall('li')
         if captions:
             return [c.text for c in captions]

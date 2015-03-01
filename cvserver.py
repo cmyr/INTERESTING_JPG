@@ -50,9 +50,11 @@ def captions(raw_text):
         print(header.find_next_sibling().prettify())
     next_sib = header.find_next_sibling()
     if next_sib:
-        return [c.text for c in next_sib.findall('li')]
+        captions = next_sib.findall('li')
+        if captions:
+            return [c.text for c in captions]
     else:
-        print("no headers found?")
+        print("no captions found?")
         print(soup.prettify())
 
 

@@ -50,8 +50,7 @@ def captions(raw_text):
         print(header.find_next_sibling().prettify())
     next_sib = header.find_next_sibling()
     if next_sib:
-        print(next_sib)
-        captions = next_sib.findall('li')
+        captions = next_sib.find_all('li')
         if captions:
             return [c.text for c in captions]
     print("no captions found?")

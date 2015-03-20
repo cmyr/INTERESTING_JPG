@@ -144,7 +144,10 @@ def image_hash(img_url):
 
     img = Image.open(TEMP_IMAGE_FILE_NAME)
     image_hash = dhash(img)
-    os.remove(TEMP_IMAGE_FILE_NAME)
+    try:
+        os.remove(TEMP_IMAGE_FILE_NAME)
+    except OSError as err:
+        pass
     return image_hash
 
 def hash_distance(img_hash, img_hash_hex):

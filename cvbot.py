@@ -105,12 +105,16 @@ class TwitterBot(object):
         if not img_urls:
             print('failed to fetch img urls')
             return
+        self.update_status("fetched %d images" % len(img_urls))
         random.shuffle(img_urls)
         for linked_photo in img_urls:
             image_hash = imagehash.image_hash(linked_photo.img_url)
             if not self.history_contains(linked_photo.img_url, image_hash):
+                self.update_status("found new image %s" % linked_photo.img_url)
                 self.add_to_history(linked_photo.img_url, image_hash)
                 return linked_photo
+            else:
+                self.update_staus("skipping image %s" % linked_photo.img_url)
         print('found no new images')
 
     def get_caption(self, linked_photo):
@@ -121,8 +125,10 @@ class TwitterBot(object):
         if not response:
             print("no response from server")
             return None
-        return self.format_caption(
+        caption = self.format_caption(
             cvserver.top_caption(response), linked_photo.link_url)
+        self.update_status("found caption: %s" % caption)
+        return caption
 
     def format_caption(self, caption, link):
         char_count = 140 - self.url_length
@@ -252,6 +258,11 @@ class TwitterBot(object):
             linked_photo = self.get_next_image()
             sys.stdout.write("\rprocessed: %d" % i)
             sys.stdout.flush()
+
+
+    def update_status(self, new_status):
+        sys.stdout.write("\r%s" % new_status)
+        sys.stdout.flush()
 
 
 

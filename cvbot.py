@@ -127,7 +127,7 @@ class TwitterBot(object):
             print("no response from server")
             return None
         else:
-            self.update_status("received response %s" % str(response.status_code))
+            self.update_status("received response")
         caption = self.format_caption(
             cvserver.top_caption(response), linked_photo.link_url)
         self.update_status("found caption: %s" % caption)

@@ -114,7 +114,7 @@ class TwitterBot(object):
                 self.add_to_history(linked_photo.img_url, image_hash)
                 return linked_photo
             else:
-                self.update_staus("skipping image %s" % linked_photo.img_url)
+                self.update_status("skipping image %s" % linked_photo.img_url)
         print('found no new images')
 
     def get_caption(self, linked_photo):

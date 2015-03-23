@@ -118,6 +118,7 @@ class TwitterBot(object):
         print('found no new images')
 
     def get_caption(self, linked_photo):
+        self.update_status("requesting caption")
         if NO_POSTING:
             return "fake caption"
         response = cvserver.response_for_image(
@@ -125,6 +126,8 @@ class TwitterBot(object):
         if not response:
             print("no response from server")
             return None
+        else:
+            self.update_status("received response %d" % response.status_code)
         caption = self.format_caption(
             cvserver.top_caption(response), linked_photo.link_url)
         self.update_status("found caption: %s" % caption)

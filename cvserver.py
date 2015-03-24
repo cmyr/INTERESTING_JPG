@@ -19,8 +19,11 @@ def response_for_image(image_url, client_name):
         'X-Requested-With': 'XMLHttpRequest',
         'User-agent': "@interesting_jpg %s v. 1.0" % client_name
     }
-
-    r = requests.post(base_url, files=files, headers=headers, timeout=5*60)
+    try:
+        r = requests.post(base_url, files=files, headers=headers, timeout=5*60)
+    except requests.exceptions.ReadTimeout as err:
+        println("read time out")
+        return
     text = r.text.strip()
     if DEBUG:
         print(r)

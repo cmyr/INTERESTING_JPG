@@ -22,7 +22,7 @@ def response_for_image(image_url, client_name):
     try:
         r = requests.post(base_url, files=files, headers=headers, timeout=5*60)
     except requests.exceptions.ReadTimeout as err:
-        println("read time out")
+        print("read time out")
         return
     text = r.text.strip()
     if DEBUG:

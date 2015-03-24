@@ -61,7 +61,8 @@ def top_caption(raw_text):
     all_captions = captions(raw_text)
     if DEBUG:
         print(all_captions)
-    return all_captions[0]
+    if all_captions:
+        return all_captions[0]
 
 
 def main():

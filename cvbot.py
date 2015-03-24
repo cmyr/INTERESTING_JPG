@@ -94,33 +94,36 @@ class TwitterBot(object):
 
     def entertain_the_huddled_masses(self):
         while True:
+            caption = None
             linked_photo, image_hash = self.get_next_image()
             if linked_photo != None:
                 caption = self.get_caption(linked_photo)
-                if caption:
-                    self.add_to_history(linked_photo.img_url, image_hash)
-                    self.tweet(linked_photo.img_url, caption)
-                    return
-                else:
-                    self.update_status("failed to fetch caption")
-                    self.sleep(5*60, False)
+            if caption:
+                self.add_to_history(linked_photo.img_url, image_hash)
+                self.tweet(linked_photo.img_url, caption)
+                return
+            else:
+                self.update_status("failed to fetch caption")
+                self.sleep(5*60, False)
 
     def get_next_image(self):
-        img_urls = self.image_func()
-        if not img_urls:
-            print('failed to fetch img urls')
-            return
-        self.update_status("fetched %d images" % len(img_urls))
-        random.shuffle(img_urls)
-        for linked_photo in img_urls:
-            image_hash = imagehash.image_hash(linked_photo.img_url)
-            if not self.history_contains(linked_photo.img_url, image_hash):
-                self.update_status("found new image %s" % linked_photo.img_url)
-                # self.add_to_history(linked_photo.img_url, image_hash)
-                return linked_photo, image_hash
-            else:
-                self.update_status("skipping image %s" % linked_photo.img_url)
-        print('found no new images')
+        while True:
+            img_urls = self.image_func()
+            if not img_urls:
+                print('failed to fetch img urls')
+                return
+            self.update_status("fetched %d images" % len(img_urls))
+            random.shuffle(img_urls)
+            for linked_photo in img_urls:
+                image_hash = imagehash.image_hash(linked_photo.img_url)
+                if not self.history_contains(linked_photo.img_url, image_hash):
+                    self.update_status("found new image %s" % linked_photo.img_url)
+                    # self.add_to_history(linked_photo.img_url, image_hash)
+                    return linked_photo, image_hash
+                else:
+                    self.update_status("skipping image %s" % linked_photo.img_url)
+            print('found no new images, will retry in 5 minutes')
+            self.sleep(5*60, False)
 
     def get_caption(self, linked_photo):
         self.update_status("requesting caption")

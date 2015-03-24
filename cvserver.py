@@ -6,7 +6,7 @@ import requests
 import bs4
 import re
 
-DEBUG = False
+from cvbot import DEBUG
 
 def response_for_image(image_url, client_name):
     base_url = 'http://deeplearning.cs.toronto.edu/api/url.php'
@@ -22,6 +22,8 @@ def response_for_image(image_url, client_name):
 
     r = requests.post(base_url, files=files, headers=headers, timeout=5*60)
     text = r.text.strip()
+    if DEBUG:
+        print(r)
     if not len(text):
         print('no text in response. status: %d %s' % (r.status_code, r.reason))
         return None

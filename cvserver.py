@@ -20,7 +20,7 @@ def response_for_image(image_url, client_name):
         'User-agent': "@interesting_jpg %s v. 1.0" % client_name
     }
 
-    r = requests.post(base_url, files=files, headers=headers)
+    r = requests.post(base_url, files=files, headers=headers, timeout=5*60)
     text = r.text.strip()
     if not len(text):
         print('no text in response. status: %d %s' % (r.status_code, r.reason))

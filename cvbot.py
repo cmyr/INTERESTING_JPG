@@ -128,10 +128,15 @@ class TwitterBot(object):
             return None
         else:
             self.update_status("received response")
-        caption = self.format_caption(
-            cvserver.top_caption(response), linked_photo.link_url)
-        self.update_status("found caption: %s" % caption)
-        return caption
+        caption = cvserver.top_caption(response)
+        if caption:
+            caption = self.format_caption(
+                caption, linked_photo.link_url)
+            self.update_status("found caption: %s" % caption)
+            return caption
+        else:
+            print("no caption found?")
+            print(response)
 
     def format_caption(self, caption, link):
         char_count = 140 - self.url_length

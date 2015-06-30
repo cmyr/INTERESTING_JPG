@@ -6,7 +6,7 @@ import requests
 import bs4
 import re
 
-from cvbot import DEBUG
+DEBUG = False
 
 def response_for_image(image_url, client_name):
     base_url = 'http://deeplearning.cs.toronto.edu/api/url.php'
@@ -61,18 +61,35 @@ def captions(raw_text):
     print("no captions found?")
     print(soup.prettify())
 
-
 def top_caption(raw_text):
+    return old_caption(raw_text) or new_caption(raw_text)
+
+def old_caption(raw_text):
     all_captions = captions(raw_text)
     if DEBUG:
         print(all_captions)
     if all_captions:
         return all_captions[0]
 
+def new_caption(raw_text):
+    """
+    Tue Jun 30 17:14:11 2015 
+    a single caption is being returned, in the tags field. This extracts that caption.
+    """
+    soup = bs4.BeautifulSoup(raw_text)
+    tag = soup.find('h4', text=re.compile(r'TAGS'))
+    if not tag:
+        return
+
+    return tag.next_sibling.text.strip()
+
 
 def main():
     sample_response = """<img id="result-img" src="../tmpfiles/20150107-10:35:13.jpg" height="300"/><h4>TAGS:</h4><h4>&nbsp;&nbsp;cycler&nbsp;&nbsp;peddler&nbsp;&nbsp;salesman&nbsp;&nbsp;rucksack&nbsp;&nbsp;pedicab&nbsp;&nbsp;</h4><br/><h4>Nearest Neighbor Sentence:</h4><ul><li>a woman outside with an umbrella riding a motor cart .</li></ul><br/><h4>Top-5 Generated:</h4><ul><li>two men are wearing a hat , riding on a bicycle with a backpack .</li><li>a man in a cart filled with bikes .</li><li>a man wearing a hat while trying to ride a bicycle on a bike .</li><li>a man riding a bicycle with a cart attached .</li><li>a man wearing a hat on a bicycle and carrying a cart .
     </li></ul>"""
+
+    new_response = '''<img id="result-img" src="../tmpfiles/20150630-17:10:37.jpg" height="300"/><h4>TAGS:</h4><h4>&nbsp;&nbsp;A group of people sitting in front of a television .\n&nbsp;&nbsp;</h4><br/><h4>Nearest Neighbor Sentence:</h4><ul></ul><br/><h4>Top-5 Generated:</h4><ul></ul>'''
+    return print(top_caption(new_response))
 
     print("\n".join(captions(sample_response)))
     print(top_caption(sample_response))
